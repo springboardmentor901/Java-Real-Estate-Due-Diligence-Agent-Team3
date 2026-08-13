@@ -21,23 +21,25 @@ public class AuthService {
     private final JwtService jwtService;
  
     public RegisterResponse register(RegisterRequest request) {
+ 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("A user with this email already exists");
         }
-     
+
+        // Block self-registration as an Administrator
         if (request.getRole() == Role.ADMINISTRATOR) {
             throw new RuntimeException("Administrator accounts cannot be self-registered.");
         }
-     
+ 
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(request.getRole()) // Assign requested role directly without default
                 .build();
-     
+ 
         User savedUser = userRepository.save(user);
-     
+ 
         return RegisterResponse.builder()
                 .id(savedUser.getId())
                 .fullName(savedUser.getFullName())
@@ -46,7 +48,6 @@ public class AuthService {
                 .createdAt(savedUser.getCreatedAt())
                 .build();
     }
-
  
     public AuthResponse login(LoginRequest request) {
  
