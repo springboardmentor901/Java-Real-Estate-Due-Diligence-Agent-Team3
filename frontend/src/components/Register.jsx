@@ -1,24 +1,17 @@
-import React, { useState } from "react";
-import { registerUser } from "../services/authService";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/axios';
 
-export default function Register({ onSwitchToLogin }) {
+export default function Register() {
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    role: "BUYER",
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'BUYER',
   });
-
-  const [message, setMessage] = useState({ text: "", isError: false });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // The 4 roles allowed for self-registration per project specifications
-  const availableRoles = [
-    { label: "Buyer / Investor", value: "BUYER" },
-    { label: "Real Estate Agent", value: "REAL_ESTATE_AGENT" },
-    { label: "Legal Reviewer", value: "LEGAL_REVIEWER" },
-    { label: "Financial Institution / Bank", value: "FINANCIAL_INSTITUTION" },
-  ];
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -26,199 +19,93 @@ export default function Register({ onSwitchToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage({ text: "", isError: false });
+    setError('');
     setLoading(true);
 
     try {
-      await registerUser(formData);
-      setMessage({
-        text: "Account registered successfully! Redirecting to login...",
-        isError: false,
-      });
-      setTimeout(() => {
-        if (onSwitchToLogin) onSwitchToLogin();
-      }, 1500);
+      await api.post('/auth/register', formData);
+      navigate('/login');
     } catch (err) {
-      setMessage({ text: err.message, isError: true });
+      setError(err.response?.data?.message || err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.heading}>Create an Account</h2>
-        <p style={styles.subHeading}>Real Estate Due Diligence Platform</p>
+    <div style={{ maxWidth: '450px', margin: '3rem auto', padding: '2rem', border: '1px solid #334155', borderRadius: '8px', background: '#0f172a', color: '#f8fafc' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#38bdf8' }}>Create an Account</h2>
 
-        {message.text && (
-          <div style={message.isError ? styles.errorBox : styles.successBox}>
-            {message.text}
-          </div>
-        )}
+      {error && (
+        <div style={{ background: '#7f1d1d', color: '#fca5a5', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.9rem' }}>
+          {error}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              required
-              value={formData.fullName}
-              onChange={handleChange}
-              placeholder="e.g. John Doe"
-              style={styles.input}
-            />
-          </div>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.875rem' }}>Full Name</label>
+          <input
+            type="text"
+            name="fullName"
+            required
+            value={formData.fullName}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }}
+          />
+        </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Email Address</label>
-            <input
-              type="email"
-              name="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="john@example.com"
-              style={styles.input}
-            />
-          </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.875rem' }}>Email</label>
+          <input
+            type="email"
+            name="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }}
+          />
+        </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Password (min 8 characters)</label>
-            <input
-              type="password"
-              name="password"
-              required
-              minLength={8}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              style={styles.input}
-            />
-          </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.875rem' }}>Password</label>
+          <input
+            type="password"
+            name="password"
+            required
+            value={formData.password}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }}
+          />
+        </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Account Role</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              style={styles.input}
-            >
-              {availableRoles.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.875rem' }}>Role</label>
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '0.6rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }}
+          >
+            <option value="BUYER">Buyer</option>
+            <option value="REAL_ESTATE_AGENT">Real Estate Agent</option>
+            <option value="LEGAL_REVIEWER">Legal Reviewer</option>
+            <option value="FINANCIAL_INSTITUTION">Financial Institution / Bank</option>
+          </select>
+        </div>
 
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading ? "Registering..." : "Sign Up"}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{ padding: '0.75rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', marginTop: '0.5rem' }}
+        >
+          {loading ? 'Registering...' : 'Register'}
+        </button>
+      </form>
 
-        <p style={styles.footerText}>
-          Already have an account?{" "}
-          <span onClick={onSwitchToLogin} style={styles.link}>
-            Log In
-          </span>
-        </p>
-      </div>
+      <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: '#94a3b8' }}>
+        Already registered? <Link to="/login" style={{ color: '#38bdf8' }}>Sign In</Link>
+      </p>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f1f5f9",
-    padding: "20px",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-  },
-  card: {
-    maxWidth: "420px",
-    width: "100%",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-    padding: "32px",
-    boxSizing: "border-box",
-  },
-  heading: {
-    margin: "0 0 6px 0",
-    textAlign: "center",
-    color: "#1e293b",
-    fontSize: "24px",
-    fontWeight: "700",
-  },
-  subHeading: {
-    margin: "0 0 20px 0",
-    textAlign: "center",
-    color: "#64748b",
-    fontSize: "14px",
-  },
-  formGroup: {
-    marginBottom: "16px",
-  },
-  label: {
-    display: "block",
-    marginBottom: "6px",
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#334155",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid #cbd5e1",
-    fontSize: "14px",
-    boxSizing: "border-box",
-    outline: "none",
-  },
-  button: {
-    width: "100%",
-    padding: "12px",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    marginTop: "8px",
-  },
-  successBox: {
-    backgroundColor: "#dcfce7",
-    color: "#166534",
-    padding: "10px 14px",
-    borderRadius: "6px",
-    marginBottom: "16px",
-    fontSize: "14px",
-  },
-  errorBox: {
-    backgroundColor: "#fee2e2",
-    color: "#991b1b",
-    padding: "10px 14px",
-    borderRadius: "6px",
-    marginBottom: "16px",
-    fontSize: "14px",
-  },
-  footerText: {
-    textAlign: "center",
-    marginTop: "20px",
-    fontSize: "14px",
-    color: "#64748b",
-  },
-  link: {
-    color: "#2563eb",
-    fontWeight: "600",
-    cursor: "pointer",
-    textDecoration: "underline",
-  },
-};

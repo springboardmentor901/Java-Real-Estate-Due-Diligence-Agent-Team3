@@ -1,156 +1,116 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/common/ProtectedRoute";
+import { Navbar } from "./components/layout/Navbar";
+
+// Views
 import Login from "./components/Login";
 import Register from "./components/Register";
-import { getCurrentUser, logoutUser } from "./services/authService";
+import Dashboard from "./pages/Dashboard";
+import PropertySearch from "./pages/PropertySearch";
+import PropertyDetails from "./pages/properties/[id]";
+import ReportDetails from "./pages/reports/[id]";
+import ReportHistory from "./pages/reports/index";
+import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
+import AdminDashboard from "./components/admin/Dashboard";
 
-export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentView, setCurrentView] = useState("login"); // "login" | "register"
-
-  // Check if a user session is already saved in localStorage on page load
-  useEffect(() => {
-    const user = getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    logoutUser();
-    setCurrentUser(null);
-    setCurrentView("login");
-  };
-
-  // 1. Logged-in Dashboard View
-  if (currentUser) {
-    return (
-      <div style={styles.dashboardContainer}>
-        <div style={styles.dashboardCard}>
-          <div style={styles.badge}>Active Session</div>
-          <h1 style={styles.dashboardHeading}>
-            Real Estate Due Diligence Agent
-          </h1>
-          <p style={styles.dashboardSub}>
-            Welcome back, <strong>{currentUser.fullName || "User"}</strong>!
-          </p>
-
-          <div style={styles.profileBox}>
-            <div style={styles.profileRow}>
-              <span style={styles.profileLabel}>Email Address:</span>
-              <span style={styles.profileValue}>{currentUser.email}</span>
-            </div>
-            <div style={styles.profileRow}>
-              <span style={styles.profileLabel}>Assigned Role:</span>
-              <span style={styles.roleTag}>{currentUser.role}</span>
-            </div>
-          </div>
-
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            Sign Out
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Auth Flow (Toggle between Login and Register)
+const AppLayout = ({ children }) => {
+  const { token } = useAuth();
   return (
-    <div>
-      {currentView === "login" ? (
-        <Login
-          onSwitchToRegister={() => setCurrentView("register")}
-          onLoginSuccess={(user) => setCurrentUser(user)}
-        />
-      ) : (
-        <Register onSwitchToLogin={() => setCurrentView("login")} />
-      )}
+    <div style={{ minHeight: "100vh", backgroundColor: "#0f172a", color: "#f8fafc" }}>
+      {token && <Navbar />}
+      <main style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto" }}>
+        {children}
+      </main>
     </div>
   );
-}
-
-const styles = {
-  dashboardContainer: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f8fafc",
-    padding: "20px",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-  },
-  dashboardCard: {
-    maxWidth: "520px",
-    width: "100%",
-    backgroundColor: "#ffffff",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.06)",
-    padding: "36px",
-    boxSizing: "border-box",
-    textAlign: "center",
-    border: "1px solid #e2e8f0",
-  },
-  badge: {
-    display: "inline-block",
-    backgroundColor: "#dcfce7",
-    color: "#15803d",
-    fontSize: "12px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    padding: "4px 10px",
-    borderRadius: "20px",
-    marginBottom: "12px",
-  },
-  dashboardHeading: {
-    margin: "0 0 8px 0",
-    color: "#0f172a",
-    fontSize: "22px",
-    fontWeight: "700",
-  },
-  dashboardSub: {
-    margin: "0 0 24px 0",
-    color: "#64748b",
-    fontSize: "15px",
-  },
-  profileBox: {
-    backgroundColor: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    padding: "16px 20px",
-    marginBottom: "24px",
-    textAlign: "left",
-  },
-  profileRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 0",
-    borderBottom: "1px solid #f1f5f9",
-  },
-  profileLabel: {
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#475569",
-  },
-  profileValue: {
-    fontSize: "14px",
-    color: "#0f172a",
-  },
-  roleTag: {
-    backgroundColor: "#dbeafe",
-    color: "#1e40af",
-    fontSize: "12px",
-    fontWeight: "700",
-    padding: "3px 8px",
-    borderRadius: "6px",
-  },
-  logoutButton: {
-    padding: "10px 24px",
-    backgroundColor: "#ef4444",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
 };
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppLayout>
+          <Routes>
+            {/* Public Pages */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Core Shared Protected Pages */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/properties"
+              element={
+                <ProtectedRoute>
+                  <PropertySearch />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/properties/:id"
+              element={
+                <ProtectedRoute>
+                  <PropertyDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <ReportHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports/:id"
+              element={
+                <ProtectedRoute>
+                  <ReportDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Administrator Only Route */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute requiredRole="ADMINISTRATOR">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AppLayout>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
