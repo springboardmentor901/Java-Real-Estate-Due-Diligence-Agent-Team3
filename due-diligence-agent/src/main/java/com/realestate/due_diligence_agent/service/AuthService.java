@@ -6,11 +6,14 @@ import com.realestate.due_diligence_agent.dto.RegisterRequest;
 import com.realestate.due_diligence_agent.dto.RegisterResponse;
 import com.realestate.due_diligence_agent.entity.Role;
 import com.realestate.due_diligence_agent.entity.User;
+import com.realestate.due_diligence_agent.exception.InvalidCredentialsException;
+import com.realestate.due_diligence_agent.exception.UserAlreadyExistsException;
 import com.realestate.due_diligence_agent.repository.UserRepository;
 import com.realestate.due_diligence_agent.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
  
 @Service
 @RequiredArgsConstructor
@@ -22,11 +25,11 @@ public class AuthService {
  
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("A user with this email already exists");
+            throw new UserAlreadyExistsException();
         }
      
         if (request.getRole() == Role.ADMINISTRATOR) {
-            throw new RuntimeException("Administrator accounts cannot be self-registered.");
+            throw new IllegalArgumentException("Administrator accounts cannot be self-registered.");
         }
      
         User user = User.builder()
@@ -36,7 +39,12 @@ public class AuthService {
                 .role(request.getRole())
                 .build();
      
-        User savedUser = userRepository.save(user);
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw new UserAlreadyExistsException();
+        }
      
         return RegisterResponse.builder()
                 .id(savedUser.getId())
@@ -51,10 +59,10 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
  
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(InvalidCredentialsException::new);
  
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException();
         }
  
         String token = jwtService.generateToken(user);
